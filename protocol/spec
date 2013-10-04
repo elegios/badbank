@@ -1,0 +1,30 @@
+80 - (2 + 14 + 64)
+
+opcode | special | Stor-signed-int
+XX | XXXXXXXXXXXXXX | 64X
+
+port1: 1337 depo login etc
+port2: updates 1338 updates
+
+bigendian
+
+opcodes:
+	0 iam språk i special - över port2
+	1 login special < 10000 & 0 <= sor-signed-int < 10^17
+	2 change
+	3 info fuck saldo i mista delbara peng (öre)
+
+info codes:
+	?
+
+login
+info ok
+change
+change
+...
+close
+
+iam
+update triggerd by iam
+update triggerd by upgrade
+close
