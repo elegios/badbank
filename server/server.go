@@ -1,8 +1,8 @@
 package main
 
 import (
-	"./database" // TODO kan vara i main. men hur?
-	"./protocol"
+	"../protocol"
+	"./database"
 	"fmt"
 	"net"
 	"os"
@@ -36,8 +36,8 @@ func server(yield func(net.Conn), port string) {
 }
 
 func update(conn net.Conn) {
-	message := getMessage(conn)
-	if message.Opcode == protocol.Iam {
+	message, err := getMessage(conn)
+	if message.Opcode == protocol.Iam || err != nil {
 		conn.Write([]byte("TODO Cool string with updates encoded awesome!"))
 	}
 }
@@ -54,20 +54,20 @@ func query(conn net.Conn) {
 		return
 	}
 	defer account.Logoff()
-	// Until closed connection or non change message.
 	for {
+		// Loop until closed connection or non change message.
 		message, err := getMessage(conn)
 		if err != nil || message.Opcode != protocol.Change {
 			return
 		}
-		db.Change(message.Special, message.Big)
+		account.Change(message.Special, message.Big)
 	}
 }
 
-func getMessage(conn net.Conn) (Message, error) {
+func getMessage(conn net.Conn) (protocol.Message, error) {
 	raw := make([]byte, 10)
 	_, err := conn.Read(raw)
-	var message Message
+	var message protocol.Message
 	message, err = protocol.Decode(raw)
 	return message, err
 }
