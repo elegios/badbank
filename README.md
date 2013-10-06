@@ -1,7 +1,7 @@
 Badbank
 =======
 
-Protokoll och implementation av Badbank TCP protokollet. 
+Protokoll och implementation av Badbank TCP protokollet. Skolarbete i kursen programmeringsparadigmer.
 
 Protokollet delas upp i två portar. Query för använder trafik och Update för klientuppdateringar. Båda är Big-Endian.
 
@@ -90,6 +90,7 @@ Uppdateringar från server kan komma när som helst och triggas av olika saker. 
 Uppdateringar kommer i form av [JSON](http://www.json.org/) encodad data.
 
 | Fält               | Typ                    |
+| ------------------ | ---------------------- |
 | Välkomstmeddelande | 80 tecken sträng utf-8 |
 | TODO...            |                        |
 
@@ -101,3 +102,4 @@ Uppdateringar kommer i form av [JSON](http://www.json.org/) encodad data.
 |           | <--      | update |
 | ...       | ...      | ...    |
 |           | <--      | update |
+| TCP CLOSE |          |        |
