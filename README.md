@@ -32,13 +32,13 @@ Operationskoden talar om vad meddelandets typ är. Det finns 4 olika opcodes.
 * skickas över Update porten. 
 
 #### Iam
-Iam skickas för att tala om vilket språk klienten vill ha och vilken version av klienten den har just nu så att servern kan skicka rätt sak över Update.
+Iam skickas för att tala om vilket språk klienten vill ha och trigga en nerladdning av den senaste klientdatan så som språk och välkomstmeddelande. 
 Iam är speciell på två sätt. Den skickas över Update porten 1338 och har en underlig special. Iam's special är 2*7 ascii, alltså komprimerad ascii, där extended biten på ascii bokstäverna är borttagna. Iam's special innehåller vilket språk klienten ska vara på i typen av sv, en, uk, osv.
 
 | Format  | opcode | special | storklump |
 | ------- | ------ | ------- | --------- |
-| områden | iam    | språk   | version   |
-| exempel | 00     | "sv"    | 3         |
+| områden | iam    | språk   | 0         |
+| exempel | 00     | "sv"    | 0         |
 
 #### Login
 Login är det första meddelandet klienten måste skicka på Query porten. Pinkod och kontonummer är argumenten.
@@ -59,11 +59,13 @@ Efter att användaren har loggat in med Login kan den skicka Change frågor för
 #### Info
 Info används för att skicka informationsmeddelanden så som felmeddelanden eller saldon.
 
-| Specialfältet | namn        |
-| ------------- | ----------- |
-| 2             | OK          | 
-| 4             | error       |
-| 5             | internt fel |
+| Specialfältet | namn                  |
+| ------------- | --------------------- |
+| 2             | ok                    | 
+| 3             | bad login             |
+| 4             | error                 |
+| 5             | internt fel           |
+| 6             | bad verification code |
 
 | Format  | opcode | special       | storklump |
 | ------- | ------ | ------------  | --------- |
@@ -85,7 +87,7 @@ Info används för att skicka informationsmeddelanden så som felmeddelanden ell
 
 
 ## Update
-Uppdateringar från server kan komma när som helst och triggas av olika saker. Skickar användaren en IAM till server där versionen är fel eller om server bara har en ny version som den just nu håller på att trycka ut.
+Uppdateringar från server kan komma när som helst och triggas av olika saker. Skickar användaren en IAM till server eller om server bara har en ny version som den just nu håller på att trycka ut.
 
 Uppdateringar kommer i form av [JSON](http://www.json.org/) encodad data.
 
