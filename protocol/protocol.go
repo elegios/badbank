@@ -6,8 +6,6 @@ import (
 	"errors"
 )
 
-type Opcode int8
-
 const (
 	Iam = iota
 	Login
@@ -15,37 +13,52 @@ const (
 	Info
 )
 
+const (
+	opshift        uint   = 14
+	charactershift uint   = 7
+	charactermask  uint16 = (1 << charactershift) - 1
+)
+
 type Message struct {
-	Opcode  Opcode
+	Opcode  uint8
 	Special uint16
 	Big     int64
 }
 
-type Infocode uint16
-
-func Decode(raw []byte) (Message, error) {
-	var message Message
+func Decode(raw []byte) (message *Message, err error) {
 	if len(raw) != 10 {
-		return message, errors.New("Message length must be 10 bytes!")
+		return nil, errors.New("Message length must be 10 bytes!")
 	}
-	message.Opcode = Opcode(raw[0] >> 6)
-	raw[0] = raw[0] & 0x3F
+	message = new(Message)
 	buf := bytes.NewBuffer(raw)
-	err := binary.Read(buf, binary.BigEndian, &message.Special)
-	err = binary.Read(buf, binary.BigEndian, &message.Big)
-	if err != nil {
-		return message, errors.New("Message format is wierd.")
-	}
-	return message, nil
+	binary.Read(buf, binary.BigEndian, &message.Special) //cannot error, buf is long enough
+	binary.Read(buf, binary.BigEndian, &message.Big)
+	message.Opcode = uint8((message.Special & (3 << opshift)) >> opshift)
+	message.Special &= ^(uint16(3) << opshift)
+	return
 }
 
-func Encode(message Message) []byte {
-	buf := bytes.NewBuffer([]byte{})
-	binary.Write(buf, binary.BigEndian, message.Special)
-	binary.Write(buf, binary.BigEndian, message.Big)
-	code := buf.Bytes()
-	buf.Reset()
-	binary.Write(buf, binary.BigEndian, message.Opcode)
-	code[0] = code[0] | buf.Bytes()[0]
-	return code
+func (m *Message) Encode() ([]byte, error) {
+	if m.Opcode >= 1<<2 || m.Special >= 1<<14 {
+		return nil, errors.New("The opcode is more than 2 bits or the special is more than 14 bits")
+	}
+	buf := bytes.NewBuffer(make([]byte, 0, 10))
+	var special uint16 = (uint16(m.Opcode) << opshift) | m.Special
+	binary.Write(buf, binary.BigEndian, special)
+	binary.Write(buf, binary.BigEndian, m.Big)
+	return buf.Bytes(), nil
+}
+
+func (m *Message) GetASCII() string {
+	return string(
+		[]byte{
+			byte((m.Special & (charactermask << charactershift)) >> charactershift),
+			byte(m.Special & charactermask),
+		},
+	)
+}
+
+func (m *Message) SetASCII(str string) {
+	b := []byte(str)
+	m.Special = (uint16(b[0]) << charactershift) | uint16(b[1])
 }
