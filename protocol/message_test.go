@@ -176,9 +176,9 @@ func TestIsLoginSuccess(t *testing.T) {
 	}
 }
 
-func TestIsDepositFail(t *testing.T) {
-	m := &Message{Info, depositFail, 0}
-	if !m.IsDepositFail() {
+func TestIsChangeSuccess(t *testing.T) {
+	m := &Message{Info, change, 0}
+	if !m.IsChange() {
 		t.Fail()
 	}
 }

@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	blob = protocol.LoadLangBlob(BLOB_FILE)
+	blob = new(protocol.Blob)
 )
 
 const (
@@ -29,11 +29,8 @@ func main() {
 	d(erp)
 
 	blobChan, langChan := handleBlobConn(blobConn)
-	if blob == nil {
-		langChan <- DEFAULT_BLOB
-		blob = new(protocol.Blob)
-		blob.Set(<-blobChan)
-	}
+	langChan <- DEFAULT_BLOB
+	blob.Set(<-blobChan)
 
 	if !login(mainConn) {
 		os.Exit(1)

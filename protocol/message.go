@@ -16,7 +16,7 @@ const (
 //Bitmasks for infomessages
 const (
 	login uint16 = 1 << iota
-	depositFail
+	change
 )
 
 const (
@@ -81,6 +81,6 @@ func (m *Message) IsLoginSuccess() bool {
 	return m.Opcode == Info && m.Special&login == login
 }
 
-func (m *Message) IsDepositFail() bool {
-	return m.Opcode == Info && m.Special&depositFail == depositFail
+func (m *Message) IsChangeSuccess() bool {
+	return m.Opcode == Info && m.Special&change == change
 }

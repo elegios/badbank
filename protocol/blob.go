@@ -2,8 +2,6 @@ package protocol
 
 import (
 	"bytes"
-	"encoding/gob"
-	"os"
 	"sync"
 )
 
@@ -36,35 +34,6 @@ const (
 	CHANGE_LANGUAGE_QUESTION
 	LANGUAGE_WILL_CHANGE
 )
-
-func LoadLangBlob(filename string) (b *Blob) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return
-	}
-	defer file.Close()
-
-	strings := make([]string, 0)
-
-	dec := gob.NewDecoder(file)
-	err = dec.Decode(strings) //May or may not work the way we want it to
-	if err != nil {
-		return
-	}
-
-	return &Blob{blob: strings}
-}
-
-func (b *Blob) SaveLangBlob(filename string) {
-	file, err := os.Create(filename)
-	if err != nil {
-		return
-	}
-	defer file.Close()
-
-	enc := gob.NewEncoder(file)
-	enc.Encode(b.blob)
-}
 
 func (b *Blob) Get(id int) string {
 	b.rwmutex.RLock()

@@ -77,7 +77,7 @@ func loggedInInteraction(mainConn net.Conn, langChan chan<- string) {
 
 	sendMessage(m, mainConn)
 	m = readMessage(mainConn)
-	if m.IsDepositFail() {
+	if !m.IsChangeSuccess() {
 		fmt.Print(blob.Get(protocol.DEPOSIT_FAIL))
 	}
 	fmt.Printf("%s %d\n", blob.Get(protocol.BALANCE), m.Big)
@@ -90,9 +90,11 @@ func sendMessage(message *protocol.Message, conn net.Conn) {
 
 func readMessage(conn net.Conn) (m *protocol.Message) {
 	b := make([]byte, 10)
-	_, erp := conn.Read(b) //TODO: check error handling
-	d(erp)
-	m, erp = protocol.DecodeMessage(b)
+	n, _ := conn.Read(b) //TODO: check error handling
+	if n != 10 {
+		panic(n)
+	}
+	m, erp := protocol.DecodeMessage(b)
 	d(erp)
 	return
 }
