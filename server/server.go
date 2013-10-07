@@ -1,9 +1,9 @@
 package main
 
 import (
-	"../protocol"
-	"./database"
 	"fmt"
+	"github.com/elegios/badbank/protocol"
+	"github.com/elegios/badbank/server/database"
 	"net"
 )
 

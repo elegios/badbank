@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/elegios/badbank/protocol"
 	"net"
 	"time"
@@ -10,7 +11,10 @@ const (
 	timeout = time.Second
 )
 
+var buffer []byte
+
 func handleBlobConn(blobConn net.Conn) (<-chan []string, chan<- string) {
+	buffer = make([]byte, protocol.MaxBlobSize)
 	out := make(chan []string)
 	in := make(chan string, 1)
 	go func() {
@@ -36,15 +40,15 @@ func askForBlob(blobConn net.Conn, lang string) {
 }
 
 func readBlob(blobConn net.Conn, out chan<- []string) {
-	b := make([]byte, protocol.MaxBlobSize)
-
 	blobConn.SetReadDeadline(time.Now().Add(timeout))
-	_, err := blobConn.Read(b) //TODO, check correctness/error handling
+	n, err := blobConn.Read(buffer) //TODO, check correctness/error handling
 	if err != nil {
+		fmt.Print(err)
 		return
 	}
-	strings := protocol.DecodeBlob(b)
+	strings := protocol.DecodeBlob(buffer[:n])
 	if err != nil {
+		fmt.Print("died2")
 		return //TODO: print some error, the blob package was malformed
 	}
 	out <- strings
