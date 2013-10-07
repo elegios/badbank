@@ -12,8 +12,8 @@ var (
 )
 
 const (
-	MAIN_PORT    = 9090
-	BLOB_PORT    = 9091
+	MAIN_PORT    = 1337
+	BLOB_PORT    = 1338
 	BLOB_FILE    = "blobfile"
 	DEFAULT_BLOB = "en"
 )

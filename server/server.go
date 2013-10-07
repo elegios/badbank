@@ -36,7 +36,27 @@ func server(yield func(net.Conn), port string) {
 func update(conn net.Conn) {
 	message, err := getMessage(conn)
 	if message.Opcode == protocol.Iam || err != nil {
-		conn.Write([]byte("TODO Cool string with updates encoded awesome!"))
+		sampleblob := new(protocol.Blob)
+		sampleblob.Set([]string{
+			"LOGIN_INTRO\n",
+			"LOGIN_CARD_NUMBER\n",
+			"LOGIN_PIN_CODE\n",
+			"LOGIN_SUCCESS\n",
+			"LOGIN_FAIL\n",
+			"BALANCE\n",
+			"MENU_BANNER\n",
+			"MENU_BALANCE\n",
+			"MENU_DEPOSIT\n",
+			"MENU_WITHDRAW\n",
+			"MENU_CHANGE_LANGUAGE\n",
+			"MENU_QUIT\n",
+			"CHANGE_AMOUNT\n",
+			"DEPOSIT_CODE\n",
+			"DEPOSIT_FAIL\n",
+			"CHANGE_LANGUAGE_QUESTION\n",
+			"LANGUAGE_WILL_CHANGE\n",
+		})
+		conn.Write(sampleblob.Encode())
 	}
 }
 
@@ -51,6 +71,7 @@ func query(conn net.Conn) {
 		sendMessage(conn, protocol.Message{protocol.Info, protocol.Badlogon, 0})
 		return
 	}
+	sendMessage(conn, protocol.Message{protocol.Info, protocol.Logon, 0})
 	defer account.Logoff()
 	for {
 		// Loop until closed connection or non change message.
@@ -68,9 +89,9 @@ func query(conn net.Conn) {
 	}
 }
 
-func getMessage(conn net.Conn) (protocol.Message, error) {
+func getMessage(conn net.Conn) (*protocol.Message, error) {
 	raw := make([]byte, 10)
-	_, err := conn.Read(raw)
+	conn.Read(raw)
 	return protocol.DecodeMessage(raw)
 }
 
