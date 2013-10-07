@@ -3,77 +3,81 @@ Badbank
 
 Protokoll och implementation av Badbank TCP protokollet. Skolarbete i kursen programmeringsparadigmer.
 
-Protokollet delas upp i två portar. Query för använder trafik och Update för klientuppdateringar. Båda är Big-Endian.
+Protokollet delas upp i två portar. Transaction för användartrafik och Update för klientuppdateringar. Alla data är big-endian.
 
-| Del    | Port | Typ            |
-| -----  | ---- | -------------- |
-| Query  | 1337 | 10 byte binary |
-| Update | 1338 | JSON           |
+| Del         | Port | Typ            |
+| -----       | ---- | -------------- |
+| Transaction | 1337 | 10 byte binary |
+| UIUpdate    | 1338 | lang package   |
 
-## Query
+## Transaction
 
-Query delen hanterar allt som har med användare att göra. Att logga in, felmeddelanden, kontoförändringar osv. Query är ett binär protokoll med ett enda format uppdelat i fyra områden.
+Transaction hanterar allt som har med användare att göra. Att logga in, felmeddelanden, kontoförändringar osv. Transaction är ett binärt protokoll med ett enda format med fyra tolkningsmöjligheter beroende på de två första bitarna.
 
 | Område    | Längd (bitar) | Tolkning     |
 | --------- | :-----------: | ------------ |
 | opcode    | 2             | unsigned int |
 | special   | 14            | *olika       |
-| storklump | 64            | signed int   |
+| large     | 64            | signed int   |
 
 ### Opcode
-Operationskoden talar om vad meddelandets typ är. Det finns 4 olika opcodes.
+Opcode specificerar meddelandets typ. Det finns 4 olika opcodes.
 
 | Opcodes | namn   | binärkod |
 | :-----: | ------ | -------- |
-| 0       | iam*   | 00       |
+| 0       | change | 00       |
 | 1       | login  | 01       |
-| 2       | change | 10       |
+| 2       | iam*   | 10       |
 | 3       | info   | 11       |
 * skickas över Update porten. 
 
-#### Iam
-Iam skickas för att tala om vilket språk klienten vill ha och trigga en nerladdning av den senaste klientdatan så som språk och välkomstmeddelande. 
-Iam är speciell på två sätt. Den skickas över Update porten 1338 och har en underlig special. Iam's special är 2*7 ascii, alltså komprimerad ascii, där extended biten på ascii bokstäverna är borttagna. Iam's special innehåller vilket språk klienten ska vara på i typen av sv, en, uk, osv.
-
-| Format  | opcode | special | storklump |
-| ------- | ------ | ------- | --------- |
-| områden | iam    | språk   | 0         |
-| exempel | 00     | "sv"    | 0         |
-
-#### Login
-Login är det första meddelandet klienten måste skicka på Query porten. Pinkod och kontonummer är argumenten.
-
-| Format  | opcode | special | storklump   |
-| ------- | ------ | ------- | ----------- |
-| områden | login  | pinkod  | kontonummer |
-| exempel | 01     | 4444    | 3141592654  |
-
 #### Change
-Efter att användaren har loggat in med Login kan den skicka Change frågor för att ändra på användarens konto. Change kan både lägga till och tabort gotyckligt stora summor från kontot i minsta valören av användarens hemlandsvaluta, så som ören eller cent. Change måste skickas med en tvåsiffrig säkerhetskod i special för att transaktionen ska gå igenom. Säkerhetskoden är alla ojämna tal mellan 0 - 100.
+Skickas från klient till server.
+Large är den siffra som ska adderas till användarens saldo. Om large är negativ ska special vara en två-siffrig säkerhetskod från en lista som banken tillhandahålligt användaren. Varje kod fungerar enbart en gång.
+Large = 0 är giltigt.
+Servern kommer svara med ett info-meddelande med en flagga som meddelar om förändringen lyckades.
 
-| Format  | opcode | special      | storklump |
+| Format  | opcode | special      | large     |
 | ------- | ------ | ------------ | --------- |
 | områden | change | säkerhetskod | mängd     |
-| exempel | 10     | 01           | -299      |
+| exempel | 00     | 01           | -299      |
+| --||--  | 00     | 0            | 100       |
+
+#### Login
+Skickas från klient till server.
+Login måste vara det första meddelandet en klient skickar över Transaction. Special ska vara en fyrsiffrig pinkod, large ska vara ett kortnummer
+
+| Format  | opcode | special | large       |
+| ------- | ------ | ------- | ----------- |
+| områden | login  | pinkod  | kortnummer  |
+| exempel | 01     | 4444    | 3141592654  |
+
+#### Iam
+Skickas från klienten till servern över UIUpdate.
+Triggar en updatering av klientens språkdata och meddelar servern om vilket språk klienten vill ha uppdateringar i. Special är två ascii-tecken utan den första biten, dvs 7 bitar var.
+
+| Format  | opcode | special | large     |
+| ------- | ------ | ------- | --------- |
+| områden | iam    | språk   | 0         |
+| exempel | 10     | "sv"    | 0         |
+| exempel | 10     | "en"    | 0         |
 
 #### Info
-Info används för att skicka informationsmeddelanden så som felmeddelanden eller saldon.
+Skickas från servern till klienten.
+Large är användarens nuvarande saldo om användaren är inloggad (inklusive just blev inloggad). Special är ett antal flaggor som kan vara satta. Flaggorna listas nedan, i ordning från minst signifikant bit till mest signifikant:
 
 | Specialfältet | namn                  |
 | ------------- | --------------------- |
-| 2             | ok                    | 
-| 3             | bad login             |
-| 4             | error                 |
-| 5             | internt fel           |
-| 6             | bad verification code |
+| 0             | login success         | 
+| 1             | withdraw success      |
 
-| Format  | opcode | special       | storklump |
-| ------- | ------ | ------------  | --------- |
-| områden | info   | meddelandetyp | saldo     |
-| exempel | 11     | 2             | 300       |
+| Format  | opcode | special   | large     |
+| ------- | ------ | --------- | --------- |
+| områden | info   | flaggor   | saldo     |
+| exempel | 11     | 2         | 300       |
 
 
-### Exempeltrafik i Query
+### Exempeltrafik i Transaction
 
 | Klient    | Riktning | Server |
 | --------- | :------: | ------ |
@@ -86,15 +90,32 @@ Info används för att skicka informationsmeddelanden så som felmeddelanden ell
 | TCP CLOSE |          |        |
 
 
-## Update
-Uppdateringar från server kan komma när som helst och triggas av olika saker. Skickar användaren en IAM till server eller om server bara har en ny version som den just nu håller på att trycka ut.
+## UIUpdate
+Över den här porten skickas Iam till servern och lang package till klienten. Ett Iam ska trigga ett lang package, men i övrigt kan ett lang package komma utan förvarning.
 
-Uppdateringar kommer i form av [JSON](http://www.json.org/) encodad data.
+Ett lang package är ett antal utf8-kodade, null-terminerade strängar. Null tas bort vid tolkning av paketet, strängar får ej innehålla null. Strängarna ska skickas i ordning som nedan:
 
-| Fält               | Typ                    |
-| ------------------ | ---------------------- |
-| Välkomstmeddelande | 80 tecken sträng utf-8 |
-| TODO...            |                        |
+| String name              | Description                                 |
+| ------------------------ | ------------------------------------------- |
+| LOGIN_INTRO              | before providing login info                 |
+| LOGIN_CARD_NUMBER        | before entering card number                 |
+| LOGIN_PIN_CODE           | before entering pin code                    |
+| LOGIN_SUCCESS            | after successfully logging in               |
+| LOGIN_FAIL               | after failing to log in                     |
+| BALANCE                  | will be followed by a space and the balance |
+| MENU_BANNER              | before chosing an action                    |
+| MENU_BALANCE             | description of 'print account balance'      |
+| MENU_DEPOSIT             | description of 'deposit'                    |
+| MENU_WITHDRAW            | description of 'withdraw'                   |
+| MENU_CHANGE_LANGUAGE     | description of 'change language'            |
+| MENU_QUIT                | description of 'quit'                       |
+| CHANGE_AMOUNT            | before entering amount to deposit/withdraw  |
+| DEPOSIT_CODE             | before entering two-digit code              |
+| DEPOSIT_FAIL             | after a deposit has failed                  |
+| CHANGE_LANGUAGE_QUESTION | before entering language to change to       |
+| LANGUAGE_WILL_CHANGE     | after iam has been sent                     |
+
+
 
 ### Exempeltrafik i Update
 
