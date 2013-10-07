@@ -57,6 +57,7 @@ func loggedInInteraction(mainConn net.Conn, langChan chan<- string) {
 	case 3:
 		fmt.Print(blob.Get(protocol.CHANGE_AMOUNT))
 		fmt.Scanf("%d", &m.Big)
+		m.Big *= -1
 		fmt.Print(blob.Get(protocol.DEPOSIT_CODE))
 		fmt.Scanf("%d", &m.Special)
 

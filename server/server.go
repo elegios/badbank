@@ -71,7 +71,8 @@ func query(conn net.Conn) {
 		sendMessage(conn, protocol.Message{protocol.Info, protocol.Badlogon, 0})
 		return
 	}
-	sendMessage(conn, protocol.Message{protocol.Info, protocol.Logon, 0})
+	saldo, _ := account.Change(0, 0)
+	sendMessage(conn, protocol.Message{protocol.Info, protocol.Logon, saldo})
 	defer account.Logoff()
 	for {
 		// Loop until closed connection or non change message.
@@ -92,10 +93,13 @@ func query(conn net.Conn) {
 func getMessage(conn net.Conn) (*protocol.Message, error) {
 	raw := make([]byte, 10)
 	conn.Read(raw)
-	return protocol.DecodeMessage(raw)
+	message, err := protocol.DecodeMessage(raw)
+	fmt.Println("<-", message)
+	return message, err
 }
 
 func sendMessage(conn net.Conn, message protocol.Message) (bytes []byte, err error) {
+	fmt.Println("->", message, "\n")
 	bytes, err = message.Encode()
 	_, err = conn.Write(bytes)
 	return
