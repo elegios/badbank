@@ -92,10 +92,13 @@ func query(conn net.Conn) {
 func getMessage(conn net.Conn) (*protocol.Message, error) {
 	raw := make([]byte, 10)
 	conn.Read(raw)
-	return protocol.DecodeMessage(raw)
+	message, err := protocol.DecodeMessage(raw)
+	fmt.Println("<-", message)
+	return message, err
 }
 
 func sendMessage(conn net.Conn, message protocol.Message) (bytes []byte, err error) {
+	fmt.Println("->", message, "\n")
 	bytes, err = message.Encode()
 	_, err = conn.Write(bytes)
 	return
