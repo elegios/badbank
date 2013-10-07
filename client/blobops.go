@@ -43,12 +43,11 @@ func readBlob(blobConn net.Conn, out chan<- []string) {
 	blobConn.SetReadDeadline(time.Now().Add(timeout))
 	n, err := blobConn.Read(buffer) //TODO, check correctness/error handling
 	if err != nil {
-		fmt.Print(err)
 		return
 	}
 	strings := protocol.DecodeBlob(buffer[:n])
 	if err != nil {
-		fmt.Print("died2")
+		fmt.Print("died")
 		return //TODO: print some error, the blob package was malformed
 	}
 	out <- strings
