@@ -20,6 +20,7 @@ const (
 )
 
 const (
+	Logon      = 1
 	Ok         = 2
 	Badlogon   = 3
 	Error      = 4
