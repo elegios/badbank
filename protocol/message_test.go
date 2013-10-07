@@ -8,8 +8,8 @@ import (
 
 func TestDecodeOpcodeIam(t *testing.T) {
 	raw := make([]byte, 10)
-	message, _ := Decode(raw)
-	if message.Opcode != Iam {
+	message, _ := DecodeMessage(raw)
+	if message.Opcode != Change {
 		t.Fail()
 	}
 }
@@ -17,7 +17,7 @@ func TestDecodeOpcodeIam(t *testing.T) {
 func TestDecodeOpcodeInfo(t *testing.T) {
 	raw := make([]byte, 10)
 	raw[0] = 0xFF
-	message, _ := Decode(raw)
+	message, _ := DecodeMessage(raw)
 	if message.Opcode != Info {
 		t.Log(message.Opcode)
 		t.Fail()
@@ -28,7 +28,7 @@ func TestDecodeSpecial(t *testing.T) {
 	buf := bytes.NewBuffer([]byte{})
 	binary.Write(buf, binary.BigEndian, uint16(1))
 	binary.Write(buf, binary.BigEndian, int64(1))
-	message, _ := Decode(buf.Bytes())
+	message, _ := DecodeMessage(buf.Bytes())
 	if message.Special != 1 {
 		t.Fail()
 	}
@@ -38,7 +38,7 @@ func TestDecodeSpecialOverflow(t *testing.T) {
 	buf := bytes.NewBuffer([]byte{})
 	binary.Write(buf, binary.BigEndian, uint16(0xFFFF))
 	binary.Write(buf, binary.BigEndian, int64(1))
-	message, _ := Decode(buf.Bytes())
+	message, _ := DecodeMessage(buf.Bytes())
 	t.Log(message)
 	if message.Special != 0xFFFF/4 {
 		t.Fail()
@@ -48,7 +48,7 @@ func TestDecodeSpecialOverflow(t *testing.T) {
 func TestDecodeBigPositive(t *testing.T) {
 	buf := bytes.NewBuffer([]byte{0, 0})
 	binary.Write(buf, binary.BigEndian, int64(1))
-	message, _ := Decode(buf.Bytes())
+	message, _ := DecodeMessage(buf.Bytes())
 	t.Log(message)
 	if message.Big != 1 {
 		t.Fail()
@@ -58,7 +58,7 @@ func TestDecodeBigPositive(t *testing.T) {
 func TestDecodeBigNegative(t *testing.T) {
 	buf := bytes.NewBuffer([]byte{0, 0})
 	binary.Write(buf, binary.BigEndian, int64(-1))
-	message, _ := Decode(buf.Bytes())
+	message, _ := DecodeMessage(buf.Bytes())
 	if message.Big != -1 {
 		t.Fail()
 	}
@@ -135,7 +135,7 @@ func TestBothWays(t *testing.T) {
 			t.Log(err)
 			t.Fail()
 		}
-		if m2, err := Decode(b); !(err == nil && *m2 == m) {
+		if m2, err := DecodeMessage(b); !(err == nil && *m2 == m) {
 			t.Log(err, m2)
 			t.Fail()
 		}
@@ -166,5 +166,19 @@ func TestASCIIBothWays(t *testing.T) {
 		if s != m.GetASCII() {
 			t.Fail()
 		}
+	}
+}
+
+func TestIsLoginSuccess(t *testing.T) {
+	m := &Message{Info, login, 0}
+	if !m.IsLoginSuccess() {
+		t.Fail()
+	}
+}
+
+func TestIsDepositFail(t *testing.T) {
+	m := &Message{Info, depositFail, 0}
+	if !m.IsDepositFail() {
+		t.Fail()
 	}
 }

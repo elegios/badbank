@@ -7,10 +7,16 @@ import (
 )
 
 const (
-	Iam = iota
+	Change = iota
+	Iam
 	Login
-	Change
 	Info
+)
+
+//Bitmasks for infomessages
+const (
+	login uint16 = 1 << iota
+	depositFail
 )
 
 const (
@@ -25,7 +31,7 @@ type Message struct {
 	Big     int64
 }
 
-func Decode(raw []byte) (message *Message, err error) {
+func DecodeMessage(raw []byte) (message *Message, err error) {
 	if len(raw) != 10 {
 		return nil, errors.New("Message length must be 10 bytes!")
 	}
@@ -61,4 +67,12 @@ func (m *Message) GetASCII() string {
 func (m *Message) SetASCII(str string) {
 	b := []byte(str)
 	m.Special = (uint16(b[0]) << charactershift) | uint16(b[1])
+}
+
+func (m *Message) IsLoginSuccess() bool {
+	return m.Opcode == Info && m.Special&login == login
+}
+
+func (m *Message) IsDepositFail() bool {
+	return m.Opcode == Info && m.Special&depositFail == depositFail
 }

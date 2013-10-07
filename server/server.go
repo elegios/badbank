@@ -67,9 +67,7 @@ func query(conn net.Conn) {
 func getMessage(conn net.Conn) (protocol.Message, error) {
 	raw := make([]byte, 10)
 	_, err := conn.Read(raw)
-	var message protocol.Message
-	message, err = protocol.Decode(raw)
-	return message, err
+	return protocol.DecodeMessage(raw)
 }
 
 func waitforinterrupt() {

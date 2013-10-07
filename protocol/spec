@@ -28,3 +28,68 @@ iam
 update triggerd by iam
 update triggerd by upgrade
 close
+
+
+# Normal messages:
+
+Communication happens using two ports, one for actual transactions and a second one for language and ui changes.
+
+All normal messages are 10 bytes long and follow this format:
+
+2bit opcode, 14bit special, 64bit large number.
+
+All numbers are stored in big endian.
+The opcode specifies more clearly how the other fields should be interpreted.
+The following opcodes exist (and are described in more detail later):
+0 - change (to change the account balance)
+1 - iam (to change the language, sent to the second port)
+2 - login (to send all the info required to login)
+3 - info (a general response from the server)
+
+All normal messages are sent through the first port unless otherwise specified. All fields that are not specified in the details below are ignored.
+
+## 0 - change
+Sent from client to server.
+The large (signed) number is the amount by which the balance should be changed. If the large number is negative the special field should contain a two-digit long code as extra verification. The client should have a list of valid two-digit codes, where each code is only valid once.
+The server should respond with an info message that indicates success or failure as well as the resulting account balance.
+
+## 1 - iam
+Sent from client to server over the second port.
+The special field should be two ascii characters without the first bit, i.e., each character is 7 bits. These characters should describe a language ("en", "sv", etc.) that the server supports.
+The server responds (eventually, not necessarily immediately) with a special package containing all text necessary to show the ui in that language. This package is described later.
+
+## 2 - login
+Sent from client to server.
+The special field should be a four-digit pin code, the large number should be the card number (14 digits).
+The server should respond with an info message that indicates success or failure as well as the current account balance.
+
+## 3 - info
+Sent from server to client.
+The large number is the account balance if the client is logged in (or just logged in), zeroes otherwise.
+The special field may have the following bits set, in order from least significant to most significant:
+0 - login (set if the user just successfully logged in)
+1 - withdraw (set if the user just successfully withdrew money)
+
+# Language pack messages
+Sent from the server to the client over the second port.
+A language pack may be sent at any time without warning.
+A language pack message is a message containing several sequential utf8 encoded null-terminated strings. The nulls are removed when interpreting the strings, the order matter, and the strings themselves may not contain null.
+The name of the strings in order are as follows:
+LOGIN_INTRO (before providing login info)
+LOGIN_CARD_NUMBER (before entering card number)
+LOGIN_PIN_CODE (before entering pin code)
+LOGIN_SUCCESS (after successfully logging in)
+LOGIN_FAIL (after failing to log in)
+BALANCE (will be followed by a space and the balance)
+MENU_BANNER (before chosing an action)
+MENU_BALANCE (description of 'print account balance')
+MENU_DEPOSIT (description of 'deposit')
+MENU_WITHDRAW (description of 'withdraw')
+MENU_CHANGE_LANGUAGE (description of 'change language')
+MENU_QUIT (description of 'quit')
+CHANGE_AMOUNT (before entering amount to deposit/withdraw)
+DEPOSIT_CODE (before entering two-digit code)
+DEPOSIT_FAIL (after a deposit has failed)
+CHANGE_LANGUAGE_QUESTION (before entering language to change to)
+LANGUAGE_WILL_CHANGE (after iam has been sent)
+The client should display these to the user at appropriate times.
