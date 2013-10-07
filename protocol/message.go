@@ -20,6 +20,14 @@ const (
 )
 
 const (
+	Ok         = 2
+	Badlogon   = 3
+	Error      = 4
+	Fel        = 5
+	VercodeErr = 6
+)
+
+const (
 	opshift        uint   = 14
 	charactershift uint   = 7
 	charactermask  uint16 = (1 << charactershift) - 1

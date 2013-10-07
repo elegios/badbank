@@ -5,8 +5,6 @@ import (
 	"./database"
 	"fmt"
 	"net"
-	"os"
-	"os/signal"
 )
 
 var db database.Database
@@ -15,7 +13,7 @@ func main() {
 	db = database.SampleDatabase()
 	go server(update, ":1338")
 	go server(query, ":1337")
-	waitforinterrupt() // select{}
+	select {}
 }
 
 func server(yield func(net.Conn), port string) {
@@ -45,12 +43,12 @@ func update(conn net.Conn) {
 func query(conn net.Conn) {
 	message, err := getMessage(conn)
 	if message.Opcode != protocol.Login || err != nil {
-		// send must come first
+		sendMessage(conn, protocol.Message{protocol.Info, protocol.Error, 0})
 		return
 	}
 	account, err := db.Loggon(message.Big, message.Special)
 	if err != nil {
-		// Send login error
+		sendMessage(conn, protocol.Message{protocol.Info, protocol.Badlogon, 0})
 		return
 	}
 	defer account.Logoff()
@@ -58,9 +56,15 @@ func query(conn net.Conn) {
 		// Loop until closed connection or non change message.
 		message, err := getMessage(conn)
 		if err != nil || message.Opcode != protocol.Change {
+			sendMessage(conn, protocol.Message{protocol.Info, protocol.Error, 0})
 			return
 		}
-		account.Change(message.Special, message.Big)
+		saldo, err := account.Change(message.Special, message.Big)
+		if err != nil {
+			sendMessage(conn, protocol.Message{protocol.Info, protocol.VercodeErr, 0})
+			continue
+		}
+		sendMessage(conn, protocol.Message{protocol.Info, protocol.Ok, saldo})
 	}
 }
 
@@ -70,10 +74,10 @@ func getMessage(conn net.Conn) (protocol.Message, error) {
 	return protocol.DecodeMessage(raw)
 }
 
-func waitforinterrupt() {
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	<-c
+func sendMessage(conn net.Conn, message protocol.Message) (bytes []byte, err error) {
+	bytes, err = message.Encode()
+	_, err = conn.Write(bytes)
+	return
 }
 
 func derp(err error) {
