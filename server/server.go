@@ -71,7 +71,8 @@ func query(conn net.Conn) {
 		sendMessage(conn, protocol.Message{protocol.Info, protocol.Badlogon, 0})
 		return
 	}
-	sendMessage(conn, protocol.Message{protocol.Info, protocol.Logon, 0})
+	saldo, _ := account.Change(0, 0)
+	sendMessage(conn, protocol.Message{protocol.Info, protocol.Logon, saldo})
 	defer account.Logoff()
 	for {
 		// Loop until closed connection or non change message.
