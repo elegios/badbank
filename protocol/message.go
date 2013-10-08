@@ -78,17 +78,15 @@ func (m *Message) IsChangeSuccess() bool {
 }
 
 func (m *Message) SetLoginSuccess(success bool) {
-	if success {
-		m.Special |= login
-	} else {
+	m.Special |= login
+	if !success {
 		m.Special ^= login
 	}
 }
 
 func (m *Message) SetChangeSuccess(success bool) {
-	if success {
-		m.Special |= change
-	} else {
+	m.Special |= change
+	if !success {
 		m.Special ^= change
 	}
 }
