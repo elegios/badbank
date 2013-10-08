@@ -22,3 +22,5 @@ _testmain.go
 *.exe
 
 client/client
+
+server/server

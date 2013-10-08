@@ -23,7 +23,10 @@ func handleBlobConn(blobConn net.Conn) (<-chan []string, chan<- string) {
 			case lang := <-in:
 				askForBlob(blobConn, lang)
 			default:
-				readBlob(blobConn, out)
+				err := readBlob(blobConn, out)
+				if err != nil {
+					return
+				}
 			}
 		}
 	}()
@@ -39,7 +42,7 @@ func askForBlob(blobConn net.Conn, lang string) {
 	d(erp)
 }
 
-func readBlob(blobConn net.Conn, out chan<- []string) {
+func readBlob(blobConn net.Conn, out chan<- []string) (err error) {
 	blobConn.SetReadDeadline(time.Now().Add(timeout))
 	n, err := blobConn.Read(buffer) //TODO, check correctness/error handling
 	if err != nil {
@@ -51,4 +54,5 @@ func readBlob(blobConn net.Conn, out chan<- []string) {
 		return //TODO: print some error, the blob package was malformed
 	}
 	out <- strings
+	return
 }

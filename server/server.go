@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/elegios/badbank/protocol"
 	"github.com/elegios/badbank/server/database"
+	"io"
 	"net"
 )
 
@@ -34,29 +35,35 @@ func server(yield func(net.Conn), port string) {
 }
 
 func update(conn net.Conn) {
-	message, err := getMessage(conn)
-	if message.Opcode == protocol.Iam || err != nil {
-		sampleblob := new(protocol.Blob)
-		sampleblob.Set([]string{
-			"LOGIN_INTRO\n",
-			"LOGIN_CARD_NUMBER\n",
-			"LOGIN_PIN_CODE\n",
-			"LOGIN_SUCCESS\n",
-			"LOGIN_FAIL\n",
-			"BALANCE\n",
-			"MENU_BANNER\n",
-			"MENU_BALANCE\n",
-			"MENU_DEPOSIT\n",
-			"MENU_WITHDRAW\n",
-			"MENU_CHANGE_LANGUAGE\n",
-			"MENU_QUIT\n",
-			"CHANGE_AMOUNT\n",
-			"DEPOSIT_CODE\n",
-			"DEPOSIT_FAIL\n",
-			"CHANGE_LANGUAGE_QUESTION\n",
-			"LANGUAGE_WILL_CHANGE\n",
-		})
-		conn.Write(sampleblob.Encode())
+	for {
+		message, err := getMessage(conn)
+		if err == io.EOF {
+			return
+		}
+		fmt.Println("->", "blob")
+		if message.Opcode == protocol.Iam || err != nil {
+			sampleblob := new(protocol.Blob)
+			sampleblob.Set([]string{
+				"LOGIN_INTRO\n",
+				"LOGIN_CARD_NUMBER\n",
+				"LOGIN_PIN_CODE\n",
+				"LOGIN_SUCCESS\n",
+				"LOGIN_FAIL\n",
+				"BALANCE\n",
+				"MENU_BANNER\n",
+				"MENU_BALANCE\n",
+				"MENU_DEPOSIT\n",
+				"MENU_WITHDRAW\n",
+				"MENU_CHANGE_LANGUAGE\n",
+				"MENU_QUIT\n",
+				"CHANGE_AMOUNT\n",
+				"DEPOSIT_CODE\n",
+				"DEPOSIT_FAIL\n",
+				"CHANGE_LANGUAGE_QUESTION\n",
+				"LANGUAGE_WILL_CHANGE\n",
+			})
+			conn.Write(sampleblob.Encode())
+		}
 	}
 }
 
@@ -92,7 +99,10 @@ func query(conn net.Conn) {
 
 func getMessage(conn net.Conn) (*protocol.Message, error) {
 	raw := make([]byte, 10)
-	conn.Read(raw)
+	_, err := conn.Read(raw)
+	if err != nil {
+		return nil, err
+	}
 	message, err := protocol.DecodeMessage(raw)
 	fmt.Println("<-", message)
 	return message, err
