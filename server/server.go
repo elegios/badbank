@@ -14,6 +14,7 @@ func main() {
 	db = database.SampleDatabase()
 	go server(update, ":1338")
 	go server(query, ":1337")
+	go gui()
 	select {}
 }
 
@@ -34,35 +35,77 @@ func server(yield func(net.Conn), port string) {
 	}
 }
 
+var langs map[string]*protocol.Blob
+
+func init() {
+	langs = make(map[string]*protocol.Blob)
+	langs["bg"] = new(protocol.Blob)
+	langs["bg"].Set([]string{
+		"LOGIN_INTRO\n",
+		"LOGIN_CARD_NUMBER\n",
+		"LOGIN_PIN_CODE\n",
+		"LOGIN_SUCCESS\n",
+		"LOGIN_FAIL\n",
+		"BALANCE\n",
+		"MENU_BANNER\n",
+		"MENU_BALANCE\n",
+		"MENU_DEPOSIT\n",
+		"MENU_WITHDRAW\n",
+		"MENU_CHANGE_LANGUAGE\n",
+		"MENU_QUIT\n",
+		"CHANGE_AMOUNT\n",
+		"DEPOSIT_CODE\n",
+		"DEPOSIT_FAIL\n",
+		"CHANGE_LANGUAGE_QUESTION\n",
+		"LANGUAGE_WILL_CHANGE\n",
+	})
+}
+
+func gui() {
+	fmt.Println("Welcome to Badbank Server!")
+	for {
+		fmt.Print("Change or create language (en): ")
+		var lang string
+		fmt.Scanf("%s", &lang)
+		if len(lang) == 0 {
+			lang = "en"
+		}
+		blob := langs[lang]
+		var fg []string
+		if blob == nil {
+			// Create lang
+			blob = new(protocol.Blob)
+			fg = make([]string, protocol.BLOBLENGTH)
+		} else {
+			fg = blob.GetSlice()
+		}
+		bg := langs["bg"].GetSlice()
+		for i := range fg {
+			fmt.Printf("%s = ", bg[i])
+			var scan string
+			fmt.Scanf("%s", &scan)
+			fg[i] = scan + "\n"
+		}
+		blob.Set(fg)
+		langs[lang] = blob
+	}
+}
+
 func update(conn net.Conn) {
+	lang := "bg"
 	for {
 		message, err := getMessage(conn)
 		if err == io.EOF {
 			return
 		}
-		fmt.Println("->", "blob")
 		if message.Opcode == protocol.Iam || err != nil {
-			sampleblob := new(protocol.Blob)
-			sampleblob.Set([]string{
-				"LOGIN_INTRO\n",
-				"LOGIN_CARD_NUMBER\n",
-				"LOGIN_PIN_CODE\n",
-				"LOGIN_SUCCESS\n",
-				"LOGIN_FAIL\n",
-				"BALANCE\n",
-				"MENU_BANNER\n",
-				"MENU_BALANCE\n",
-				"MENU_DEPOSIT\n",
-				"MENU_WITHDRAW\n",
-				"MENU_CHANGE_LANGUAGE\n",
-				"MENU_QUIT\n",
-				"CHANGE_AMOUNT\n",
-				"DEPOSIT_CODE\n",
-				"DEPOSIT_FAIL\n",
-				"CHANGE_LANGUAGE_QUESTION\n",
-				"LANGUAGE_WILL_CHANGE\n",
-			})
-			conn.Write(sampleblob.Encode())
+			lang = message.GetASCII()
+			blob := langs[lang]
+			if blob == nil {
+				lang = "bg"
+				blob = langs[lang]
+			}
+			conn.Write(blob.Encode())
 		}
 	}
 }
@@ -112,12 +155,10 @@ func getMessage(conn net.Conn) (*protocol.Message, error) {
 		return nil, err
 	}
 	message, err := protocol.DecodeMessage(raw)
-	fmt.Println("<-", message)
 	return message, err
 }
 
 func sendMessage(conn net.Conn, message *protocol.Message) (bytes []byte, err error) {
-	fmt.Println("->", message, "\n")
 	bytes, err = message.Encode()
 	_, err = conn.Write(bytes)
 	return

@@ -33,7 +33,16 @@ const (
 	DEPOSIT_FAIL
 	CHANGE_LANGUAGE_QUESTION
 	LANGUAGE_WILL_CHANGE
+	BLOBLENGTH
 )
+
+func (b *Blob) GetSlice() []string {
+	b.rwmutex.RLock()
+	defer b.rwmutex.RUnlock()
+	slice := make([]string, len(b.blob))
+	copy(slice, b.blob)
+	return slice
+}
 
 func (b *Blob) Get(id int) string {
 	b.rwmutex.RLock()

@@ -5,6 +5,7 @@ import (
 	"github.com/elegios/badbank/protocol"
 	"net"
 	"os"
+	"time"
 )
 
 var (
@@ -29,7 +30,13 @@ func main() {
 	d(erp)
 
 	blobChan, langChan := handleBlobConn(blobConn)
-	langChan <- DEFAULT_BLOB
+	go func() {
+		for {
+			// heartbeat
+			langChan <- DEFAULT_BLOB
+			time.Sleep(time.Second)
+		}
+	}()
 	blob.Set(<-blobChan)
 
 	if !login(mainConn) {
