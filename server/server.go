@@ -69,31 +69,39 @@ func update(conn net.Conn) {
 
 func query(conn net.Conn) {
 	message, err := getMessage(conn)
+	m := &protocol.Message{protocol.Info, 0, 0}
+	m.SetLoginSuccess(false)
 	if message.Opcode != protocol.Login || err != nil {
-		sendMessage(conn, protocol.Message{protocol.Info, protocol.Error, 0})
+		sendMessage(conn, m)
 		return
 	}
 	account, err := db.Loggon(message.Big, message.Special)
 	if err != nil {
-		sendMessage(conn, protocol.Message{protocol.Info, protocol.Badlogon, 0})
+		sendMessage(conn, m)
 		return
 	}
-	saldo, _ := account.Change(0, 0)
-	sendMessage(conn, protocol.Message{protocol.Info, protocol.Logon, saldo})
+	m.Big, _ = account.Change(0, 0)
+	m.SetLoginSuccess(true)
+	sendMessage(conn, m)
 	defer account.Logoff()
 	for {
 		// Loop until closed connection or non change message.
 		message, err := getMessage(conn)
+		m := &protocol.Message{protocol.Info, 0, 0}
+		m.SetChangeSuccess(false)
 		if err != nil || message.Opcode != protocol.Change {
-			sendMessage(conn, protocol.Message{protocol.Info, protocol.Error, 0})
+			m.Big, _ = account.Change(0, 0)
+			sendMessage(conn, m)
 			return
 		}
 		saldo, err := account.Change(message.Special, message.Big)
+		m.Big = saldo
 		if err != nil {
-			sendMessage(conn, protocol.Message{protocol.Info, protocol.VercodeErr, 0})
+			sendMessage(conn, m)
 			continue
 		}
-		sendMessage(conn, protocol.Message{protocol.Info, protocol.Ok, saldo})
+		m.SetChangeSuccess(true)
+		sendMessage(conn, m)
 	}
 }
 
@@ -108,7 +116,7 @@ func getMessage(conn net.Conn) (*protocol.Message, error) {
 	return message, err
 }
 
-func sendMessage(conn net.Conn, message protocol.Message) (bytes []byte, err error) {
+func sendMessage(conn net.Conn, message *protocol.Message) (bytes []byte, err error) {
 	fmt.Println("->", message, "\n")
 	bytes, err = message.Encode()
 	_, err = conn.Write(bytes)

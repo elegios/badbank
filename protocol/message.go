@@ -20,15 +20,6 @@ const (
 )
 
 const (
-	Logon      = 1
-	Ok         = 2
-	Badlogon   = 3
-	Error      = 4
-	Fel        = 5
-	VercodeErr = 6
-)
-
-const (
 	opshift        uint   = 14
 	charactershift uint   = 7
 	charactermask  uint16 = (1 << charactershift) - 1
@@ -84,4 +75,20 @@ func (m *Message) IsLoginSuccess() bool {
 
 func (m *Message) IsChangeSuccess() bool {
 	return m.Opcode == Info && m.Special&change == change
+}
+
+func (m *Message) SetLoginSuccess(success bool) {
+	if success {
+		m.Special |= login
+	} else {
+		m.Special ^= login
+	}
+}
+
+func (m *Message) SetChangeSuccess(success bool) {
+	if success {
+		m.Special |= change
+	} else {
+		m.Special ^= change
+	}
 }
