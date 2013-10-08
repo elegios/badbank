@@ -25,6 +25,7 @@ func handleBlobConn(blobConn net.Conn) (<-chan []string, chan<- string) {
 			default:
 				err := readBlob(blobConn, out)
 				if err != nil {
+					fmt.Println(err)
 					return
 				}
 			}
@@ -46,6 +47,9 @@ func readBlob(blobConn net.Conn, out chan<- []string) (err error) {
 	blobConn.SetReadDeadline(time.Now().Add(timeout))
 	n, err := blobConn.Read(buffer) //TODO, check correctness/error handling
 	if err != nil {
+		if terr := err.(net.Error); terr.Timeout() {
+			return nil
+		}
 		return
 	}
 	strings := protocol.DecodeBlob(buffer[:n])
